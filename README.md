@@ -1,1 +1,1 @@
-# Financial-document-analysis-using-GEN-AI
+# Financial-document-Analyzer-using-GEN-AI
