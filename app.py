@@ -1,3 +1,5 @@
+%%writefile app.py
+
 # Built Streamlit app for better user experience
 
 # Importing required libraries
@@ -25,15 +27,15 @@ def display_pdf_in_sidebar(pdf_path, file_name):
         os.makedirs(images_folder, exist_ok=True)
 
         # Check if images already exist
-        image_paths = list(images_folder.glob("*.png"))
+        image_paths = sorted(list(images_folder.glob("*.png"))) # Sort to maintain page order
         if image_paths:
             # If images exist, display them
-            for img_path in image_paths:
+            for i, img_path in enumerate(image_paths):
                 image = Image.open(img_path)
-                st.sidebar.image(image, caption=f"Page {image_paths.index(img_path) + 1}", use_container_width=True)
+                st.sidebar.image(image, caption=f"Page {i + 1}", use_container_width=True)
         else:
             # Convert PDF to images (one per page)
-            images = convert_from_path(pdf_path)  # This will render all pages by default
+            images = convert_from_path(pdf_path)
             for i, image in enumerate(images):
                 img_path = images_folder / f"page_{i + 1}.png"
                 image.save(img_path, "PNG")  # Save image to disk
@@ -46,21 +48,24 @@ def display_pdf_in_sidebar(pdf_path, file_name):
     except Exception as e:
         st.sidebar.error(f"Error loading PDF: {str(e)}")
 
-# Streamlit title 
-st.title("📊 Financial Document Analysis Using RAG Locally")
+# Streamlit title
+st.title("📊 DOCUMENT ANALYZER & ASSITANT")
 
 # Subtitle
-st.subheader("Use this app to analyze financial documents and answer questions.\n 💼 Secure, Local AI for Your Financial PDFs. Your documents are safe with me! 🤫 ")
+st.subheader("Use this app to analyze documents and get answer to your questions.\n 💼Its completely Offline ,Secure, Local AI for Your Financial PDFs. Your documents are safe with me! 🤫 ")
 
 # Added Instructions for the user in the sidebar on how how to use the app
 with st.sidebar:
     st.markdown("### ℹ️ How to use")
-    st.markdown("1. Upload a financial PDF\n2. Process it\n3. Ask your question ✅")
+    st.markdown("1. Upload a Document as PDF\n2. Process it\n3. Ask your question ✅")
 
 # Dropdown to select vector DB or upload a new document
 vector_db_options = [f.stem for f in Path(VECTOR_DB_FOLDER).glob("*.faiss")]
-vector_db_options.append("Upload New Document")  # Add option to upload a new document
-selected_vector_db = st.selectbox("Select existing document or Upload New Document", vector_db_options, index=0)
+vector_db_options.append("Upload New Document")
+selected_vector_db = st.selectbox("Select existing document or Upload New Document", vector_db_options, index=len(vector_db_options)-1)
+
+# Initialize vector_store to avoid errors
+vector_store = None
 
 # If 'Upload New Document' is selected, show the file uploader
 if selected_vector_db == "Upload New Document":
@@ -77,33 +82,25 @@ if selected_vector_db == "Upload New Document":
         with open(temp_path, "wb") as f:
             f.write(document_binary)
 
-        # Display PDF in the sidebar (show all pages)
+        # Display PDF in the sidebar
         display_pdf_in_sidebar(temp_path, uploaded_file.name.split('.')[0])
 
         # PDF processing button
         if st.button("Process PDF and Store in Vector DataBase"):
-            with st.spinner("Processing document..."):
-                # Convert PDF to markdown directly
+            with st.spinner("Processing document... would be back as it will take a moment :) "):
                 markdown_content = load_and_convert_document(temp_path)
                 chunks = get_markdown_splits(markdown_content)
-
-                # Initialize embeddings
                 embeddings = OllamaEmbeddings(model='nomic-embed-text', base_url="http://localhost:11434")
-
-                # Create or load vector DB and store PDF along with it
                 vector_store = create_or_load_vector_store(uploaded_file.name.split(".")[0], chunks, embeddings)
-
-                # Ensure vector DB and PDF are stored correctly
                 vector_db_path = Path(VECTOR_DB_FOLDER) / f"{uploaded_file.name.split('.')[0]}.faiss"
-                vector_store.save_local(str(vector_db_path))  # Save FAISS vector store
-
-                # Store the PDF file alongside the vector DB
-                pdf_path = Path(VECTOR_DB_FOLDER) / f"{uploaded_file.name}"
+                vector_store.save_local(str(vector_db_path))
+                
+                # Store the actual PDF file for later display
+                pdf_path = Path(VECTOR_DB_FOLDER) / f"{uploaded_file.name.split('.')[0]}.pdf"
                 with open(pdf_path, "wb") as f:
                     f.write(document_binary)
 
-                st.success("PDF processed and stored in the vector database.")
-
+                st.success("PDF processed and stored! Let me know what questions you need to ask!")
                 # Clean up the temporary file
                 Path(temp_path).unlink()
 
@@ -117,7 +114,7 @@ elif selected_vector_db != "Upload New Document":
         # Display PDF in the sidebar
         pdf_path = Path(VECTOR_DB_FOLDER) / f"{selected_vector_db}.pdf"
         if pdf_path.exists():
-            display_pdf_in_sidebar(pdf_path, selected_vector_db)
+            display_pdf_in_sidebar(str(pdf_path), selected_vector_db)
         else:
             st.sidebar.warning("PDF file not found for the selected vector DB.")
     else:
@@ -127,24 +124,22 @@ elif selected_vector_db != "Upload New Document":
 question = st.text_input("Enter your question:", placeholder="e.g., What is the company's revenue for the quarter?")
 
 # Button to process and generate answers
-if st.button("Submit Question") and question and selected_vector_db != "Upload New Document":
-    with st.spinner("Answering your question..."):
-        # Build retriever from the selected vector store
-        retriever = vector_store.as_retriever(search_type="mmr", search_kwargs={'k': 3})
+if st.button("Submit Question") and question:
+    if vector_store:
+        with st.spinner("Answering your question..."):
+            retriever = vector_store.as_retriever(search_type="mmr", search_kwargs={'k': 5})
+            rag_chain = build_rag_chain(retriever)
+            response_placeholder = st.empty()
+            response = ""
+            for chunk in rag_chain.stream(question):
+                response += chunk
+                response_placeholder.markdown(response.replace('$', '\\$'))
+    else:
+        st.error("Please upload and process a new document or select a valid existing one first.")
 
-        # Build and run the RAG chain
-        rag_chain = build_rag_chain(retriever)
 
-        # Create a placeholder for streaming response
-        response_placeholder = st.empty()  # Create an empty placeholder for the answer
-
-        # Stream the response as it is generated
-        response = ""
-        for chunk in rag_chain.stream(question):
-            response += chunk  # Append each chunk of the response
-            response_placeholder.markdown(response.replace('$', '\\$'))  # Update the placeholder with the new response
-
-# Added footer with my GitHub and LinkedIn links
+# Added footer
 st.markdown("---")
-st.markdown("Made by Saksham Patwal | Powered by LangChain + Ollama", unsafe_allow_html=True)
+st.markdown("Developed by Saksham Patwal | Powered by LangChain + Ollama | GEN-AI ", unsafe_allow_html=True)
+st.markdown("Dont forget to appreciate if it fascinates you and connect & follow")
 st.markdown("🧑‍💻[GitHub](https://github.com/Saks29) | 🔗[LinkedIn](https://www.linkedin.com/in/sakpat/)")
