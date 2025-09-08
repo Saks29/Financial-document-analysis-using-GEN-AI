@@ -1,3 +1,5 @@
+%%writefile rag.py
+
 # This file contains the code to build a RAG chain for a given document.
 
 # Importing the required libraries
@@ -60,17 +62,18 @@ def build_rag_chain(retriever):
 
     # defined prompt for the RAG model for better answer generation
     prompt = """
-        You are an assistant for financial data analysis. Use the retrieved context to answer questions. 
-        If you don't know the answer, say so. 
+        You are an assistant for financial data analysis. Use the retrieved context to answer questions.
+        If you don't know the answer, say so.
         Question: {question}
         Context: {context}
         Answer:
     """
     prompt_template = ChatPromptTemplate.from_template(prompt)
-    model = ChatOllama(model="deepseek-r1:1.5b", base_url="http://localhost:11434") # used deepseek-r1 model for retiever
+    # The base_url points to the Ollama server running in our Colab environment
+    model = ChatOllama(model="deepseek-r1:1.5b", base_url="http://localhost:11434")
     return (
         # Defined the RAG chain
-        {"context": retriever | (lambda docs: "\n\n".join(doc.page_content for doc in docs)), 
+        {"context": retriever | (lambda docs: "\n\n".join(doc.page_content for doc in docs)),
          "question": RunnablePassthrough()}
         | prompt_template # Format the question into the prompt template
         | model # pass the question and context into the model
