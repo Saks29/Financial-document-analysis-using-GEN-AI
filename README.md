@@ -2,17 +2,13 @@
 
 <div align="center">
 
-![Document Analyzer Demo](<img width="1882" height="819" alt="Screenshot 2025-09-09 011433" src="https://github.com/user-attachments/assets/b0d65699-d5ec-4990-86cb-a1b2de489693" />
-)
+<img width="1882" height="819" alt="Screenshot 2025-09-09 011433" src="https://github.com/user-attachments/assets/b0d65699-d5ec-4990-86cb-a1b2de489693" />
 
 **🛡️ Privacy-First • 🤖 AI-Powered • 💻 Completely Offline**
 
-[![Python](<img width="1853" height="824" alt="Screenshot 2025-09-09 011703" src="https://github.com/user-attachments/assets/6e1f652c-b26f-47ca-8be8-ae0fe7e92de9" />
-)
-[![LangChain](<img width="1889" height="822" alt="Screenshot 2025-09-09 012132" src="https://github.com/user-attachments/assets/3d0b4773-ab6d-4060-bef2-062aba182e0e" />
-)
-[![Ollama](<img width="1898" height="830" alt="Screenshot 2025-09-09 012221" src="https://github.com/user-attachments/assets/89eb628d-5c40-4d08-8641-d48b1f70c87e" />
-)
+<img width="1853" height="824" alt="Screenshot 2025-09-09 011703" src="https://github.com/user-attachments/assets/6e1f652c-b26f-47ca-8be8-ae0fe7e92de9" />
+<img width="1889" height="822" alt="Screenshot 2025-09-09 012132" src="https://github.com/user-attachments/assets/3d0b4773-ab6d-4060-bef2-062aba182e0e" />
+<img width="1898" height="830" alt="Screenshot 2025-09-09 012221" src="https://github.com/user-attachments/assets/89eb628d-5c40-4d08-8641-d48b1f70c87e" />
 
 *Transform your document analysis workflow with AI-powered insights while keeping your data completely secure and offline.*
 
