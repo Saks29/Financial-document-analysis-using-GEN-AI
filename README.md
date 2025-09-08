@@ -1,1 +1,1 @@
-# 📊 Financial document Analyzer |🧾⚡GEN-AI using RAG+LangChain
+# 📊 Document Analyzer & Assistant |🧾⚡GEN-AI using RAG+LangChain
